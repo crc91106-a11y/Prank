@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>System Terminal</title>
+
+<style>
+*{box-sizing:border-box}
+
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#000;
+    font-family:monospace;
+}
+
+body{
+    color:#00ff41;
+}
+
+/* TERMINAL */
+#terminal{
+    position:fixed;
+    inset:0;
+    background:#000;
+    padding:18px;
+    overflow:hidden;
+}
+
+.scanlines{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,255,65,.035) 4px
+      );
+    z-index:20;
+}
+
+.header{
+    color:#00ff41;
+    font-size:23px;
+    font-weight:bold;
+    text-shadow:0 0 10px #00ff41;
+    margin-bottom:12px;
+}
+
+.sub{
+    color:#777;
+    margin-bottom:15px;
+}
+
+.warning{
+    color:#ff2020;
+    font-weight:bold;
+    text-shadow:0 0 8px red;
+}
+
+#logs{
+    direction:ltr;
+    text-align:left;
+    height:57vh;
+    overflow:hidden;
+    line-height:1.65;
+}
+
+.line{
+    white-space:nowrap;
+}
+
+.green{color:#00ff41}
+
+.red{
+    color:#ff2020;
+    text-shadow:0 0 6px red;
+}
+
+.white{color:#ddd}
+
+#progressBox{
+    direction:ltr;
+    width:100%;
+    height:17px;
+    border:1px solid #00ff41;
+    margin-top:12px;
+    box-shadow:0 0 5px #00ff41;
+}
+
+#progress{
+    width:0%;
+    height:100%;
+    background:#00ff41;
+    box-shadow:0 0 15px #00ff41;
+}
+
+#percent{
+    direction:ltr;
+    text-align:left;
+    margin-top:6px;
+}
+
+
+/* GLITCH */
+#glitch{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#000;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    z-index:50;
+}
+
+.glitchText{
+    color:#00ff41;
+    font-size:27px;
+    font-weight:bold;
+    text-shadow:
+        3px 0 #ff0000,
+        -3px 0 #00ffff;
+    animation:shake .07s infinite;
+}
+
+.glitchWarning{
+    color:#ff2020;
+    margin-top:20px;
+    font-size:18px;
+    animation:blink .25s infinite;
+}
+
+.noise{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:.2;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 2px,
+        #00ff41 3px
+      );
+    animation:noise .06s infinite;
+}
+
+@keyframes shake{
+    0%{transform:translate(2px,-1px)}
+    50%{transform:translate(-2px,2px)}
+    100%{transform:translate(1px,-2px)}
+}
+
+@keyframes noise{
+    from{transform:translateY(0)}
+    to{transform:translateY(10px)}
+}
+
+@keyframes blink{
+    50%{opacity:.25}
+}
+
+
+/* FINAL */
+#final{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#000;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    z-index:100;
+
+    overflow:hidden;
+}
+
+/* تشويش الشاشة الأخيرة */
+#final::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:.18;
+
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 3px,
+        #00ff41 4px
+      );
+
+    animation:finalNoise .08s infinite;
+}
+
+#final::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+
+    background:
+      linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(0,255,65,.05) 50%,
+        transparent 100%
+      );
+
+    animation:scan 1.5s linear infinite;
+}
+
+.gameOver{
+    position:relative;
+    z-index:2;
+
+    color:#ff2020;
+    font-size:clamp(45px,10vw,90px);
+    font-weight:bold;
+    letter-spacing:6px;
+
+    text-shadow:
+        0 0 8px red,
+        0 0 20px red,
+        0 0 40px rgba(255,0,0,.7);
+
+    animation:
+        finalIn 1s ease-out,
+        finalShake .08s infinite;
+}
+
+.deletedText{
+    position:relative;
+    z-index:2;
+
+    margin-top:20px;
+
+    color:#ff2020;
+    font-size:22px;
+    font-weight:bold;
+
+    text-shadow:
+        0 0 8px red,
+        0 0 18px red;
+
+    animation:blink .35s infinite;
+}
+
+.mrRobot{
+    position:relative;
+    z-index:2;
+
+    margin-top:18px;
+
+    color:#00ff41;
+    font-size:25px;
+    font-weight:bold;
+    letter-spacing:4px;
+
+    text-shadow:
+        0 0 8px #00ff41,
+        0 0 20px #00ff41;
+
+    animation:robotIn 2s ease-out;
+}
+
+.status{
+    position:relative;
+    z-index:2;
+
+    margin-top:12px;
+    color:#777;
+    font-size:13px;
+}
+
+@keyframes finalIn{
+    0%{
+        opacity:0;
+        transform:scale(2);
+        filter:blur(8px);
+    }
+
+    60%{
+        opacity:1;
+        transform:scale(.95);
+        filter:blur(0);
+    }
+
+    100%{
+        transform:scale(1);
+    }
+}
+
+@keyframes finalShake{
+    0%{transform:translate(0)}
+    50%{transform:translate(2px,-1px)}
+    100%{transform:translate(-2px,1px)}
+}
+
+@keyframes robotIn{
+    0%{
+        opacity:0;
+        transform:translateY(20px);
+    }
+
+    100%{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
+
+@keyframes finalNoise{
+    from{
+        transform:translateY(0);
+    }
+
+    to{
+        transform:translateY(8px);
+    }
+}
+
+@keyframes scan{
+    0%{
+        transform:translateX(-100%);
+    }
+
+    100%{
+        transform:translateX(100%);
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+
+<!-- TERMINAL -->
+<div id="terminal">
+
+    <div class="scanlines"></div>
+
+    <div class="header">
+        [ KALI // TERMINAL ]
+    </div>
+
+    <div class="sub">
+        SECURITY DIAGNOSTIC CONSOLE
+    </div>
+
+    <div class="warning">
+        ⚠ SYSTEM PROCESSING
+    </div>
+
+    <div id="logs"></div>
+
+    <div id="progressBox">
+        <div id="progress"></div>
+    </div>
+
+    <div id="percent">0%</div>
+
+</div>
+
+
+<!-- GLITCH -->
+<div id="glitch">
+
+    <div class="noise"></div>
+
+    <div class="glitchText">
+        SYSTEM PROCESSING...
+    </div>
+
+    <div class="glitchWarning">
+        PLEASE WAIT
+    </div>
+
+</div>
+
+
+<!-- FINAL SCREEN -->
+<div id="final">
+
+    <div class="gameOver">
+        GAME OVER
+    </div>
+
+    <div class="deletedText">
+        تمسح بالملفات
+    </div>
+
+    <div class="mrRobot">
+        Name: Mr. Robot
+    </div>
+
+    <div class="status">
+        TERMINAL SESSION COMPLETE
+    </div>
+
+</div>
+
+
+<script>
+
+const logs =
+    document.getElementById("logs");
+
+const progress =
+    document.getElementById("progress");
+
+const percent =
+    document.getElementById("percent");
+
+
+const messages = [
+
+    ["INITIALIZING SYSTEM...", "green"],
+    ["جارٍ تشغيل النظام...", "green"],
+    ["جارٍ تحليل العمليات...", "green"],
+    ["SCANNING ACTIVE PROCESSES...", "green"],
+    ["تم اكتشاف نشاط غير معتاد...", "red"],
+    ["ANALYZING SYSTEM RESPONSE...", "green"],
+    ["جارٍ تحليل الاتصالات...", "green"],
+    ["PROCESSING SYSTEM DATA...", "green"],
+    ["تحليل مكونات النظام...", "green"],
+    ["WARNING: HIGH ACTIVITY", "red"],
+    ["جارٍ إنهاء العملية...", "green"],
+    ["FINAL SYSTEM CHECK...", "white"]
+
+];
+
+
+let p = 0;
+let index = 0;
+
+
+function addLine(text,color){
+
+    const line =
+        document.createElement("div");
+
+    line.className =
+        "line " + color;
+
+    line.textContent =
+        "> " + text;
+
+    logs.appendChild(line);
+
+    if(logs.children.length > 15){
+
+        logs.removeChild(
+            logs.firstChild
+        );
+
+    }
+
+}
+
+
+addLine(
+    "INITIALIZING TERMINAL...",
+    "green"
+);
+
+
+const timer = setInterval(() => {
+
+    p++;
+
+    progress.style.width =
+        p + "%";
+
+    percent.textContent =
+        p + "%";
+
+
+    if(p % 7 === 0){
+
+        const item =
+            messages[index % messages.length];
+
+        addLine(
+            item[0],
+            item[1]
+        );
+
+        index++;
+
+    }
+
+
+    if(p >= 100){
+
+        clearInterval(timer);
+
+
+        setTimeout(() => {
+
+            document.getElementById(
+                "terminal"
+            ).style.display = "none";
+
+
+            document.getElementById(
+                "glitch"
+            ).style.display = "flex";
+
+
+            setTimeout(() => {
+
+                document.getElementById(
+                    "glitch"
+                ).style.display = "none";
+
+
+                document.getElementById(
+                    "final"
+                ).style.display = "flex";
+
+            },3500);
+
+
+        },700);
+
+    }
+
+},100);
+
+</script>
+
+</body>
+</html>
